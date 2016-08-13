@@ -54,42 +54,49 @@ public protocol Decodable {
 Enables an object to be encoded to JSON.
 */
 public protocol Encodable {
-    
+
     /**
     Encodes and object as JSON.
-     
+
      - returns: JSON when encoding was successful, nil otherwise.
     */
     func toJSON() -> JSON?
-    
+
 }
 
 // MARK: - Global
 
 /**
 Date formatter used for ISO8601 dates.
- 
+
  - returns: Date formatter.
  */
 public private(set) var GlossDateFormatterISO8601: DateFormatter = {
     let dateFormatterISO8601 = DateFormatter()
-    
+
     // WORKAROUND to ignore device configuration regarding AM/PM http://openradar.appspot.com/radar?id=1110403
-    dateFormatterISO8601.locale = Locale(identifier: "en_US_POSIX")
+    #if os(Linux)
+        // swift 3 preview 4 hasn't updated to just identifier: yet
+        dateFormatterISO8601.locale = Locale(localeIdentifier: "en_US_POSIX")
+    #else
+         dateFormatterISO8601.locale = Locale(identifier: "en_US_POSIX")
+    #endif
     dateFormatterISO8601.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
 
+#if !os(Linux)
     // translate to Gregorian calendar if other calendar is selected in system settings
     var gregorian = Calendar(identifier: .gregorian)
-    
+
     gregorian.timeZone = TimeZone(abbreviation: "GMT")!
     dateFormatterISO8601.calendar = gregorian
+#endif
 
     return dateFormatterISO8601
 }()
 
 /**
  Default delimiter used for nested key paths.
- 
+
  - returns: Default key path delimiter.
  */
 public private(set) var GlossKeyPathDelimiter: String = {
@@ -98,20 +105,20 @@ public private(set) var GlossKeyPathDelimiter: String = {
 
 /**
  Transforms an array of JSON optionals to a single optional JSON dictionary.
- 
+
  - parameter array:            Array of JSON to transform.
  - parameter keyPathDelimiter: Delimiter used for nested key paths.
- 
+
  - returns: JSON when successful, nil otherwise.
  */
 public func jsonify(_ array: [JSON?], keyPathDelimiter: String = GlossKeyPathDelimiter) -> JSON? {
     var json: JSON = [:]
-    
+
     for j in array {
         if(j != nil) {
             json.add(j!, delimiter: keyPathDelimiter)
         }
     }
-    
+
     return json
 }

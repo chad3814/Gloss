@@ -25,6 +25,27 @@
 
 import Foundation
 
+
+#if os(Linux)
+extension String {
+  public func addingPercentEncoding() -> String? {
+    var chars: [Character] = []
+    // allowed characters: A-Za-z0-9-_.~=&
+    // 65-90, 97-122, 48-57, 45, 95, 46, 126, 61, 38
+    for c in Array(self.utf8) {
+      if (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c == 45 || c == 95 || c == 46 || c == 126 || c == 61 || c == 38 {
+        chars.append(Character(UnicodeScalar(c)))
+      } else {
+        chars.append(Character(UnicodeScalar(37)))
+        chars.append(String(Int(c / 16)).characters.first!)
+        chars.append(String(Int(c % 16)).characters.first!)
+      }
+    }
+    return String(chars)
+  }
+}
+#endif
+
 /**
 Decodes JSON to objects.
 */
@@ -457,11 +478,17 @@ public struct Decoder {
         return {
             json in
             
+#if os(Linux)
+            if let urlString = json.value(forKeyPath: key, withDelimiter: keyPathDelimiter) as? String,
+                let encodedString = urlString.addingPercentEncoding() {
+                return URL(string: encodedString)
+            }
+#else
             if let urlString = json.value(forKeyPath: key, withDelimiter: keyPathDelimiter) as? String,
                 let encodedString = urlString.addingPercentEncoding(withAllowedCharacters: NSCharacterSet.urlQueryAllowed) {
                 return URL(string: encodedString)
             }
-            
+#endif
             return nil
         }
     }

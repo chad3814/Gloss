@@ -75,3 +75,7 @@ Carthage/Build
 ####
 # Jazzy
 docs
+
+####
+# commandline swift build
+.build
